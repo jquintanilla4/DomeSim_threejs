@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+// Get references to the dynamic control elements
+const videoUrlInput = document.getElementById('videoUrlInput');
+const scaleInput = document.getElementById('scaleInput');
+const updateSettingsButton = document.getElementById('updateSettingsButton');
+let currentScale = 1.0; // Default scale, will be updated from input
+let initialUvsSet = false; // Flag to ensure UVs are set at least once
+
 // Create the scene
 const scene = new THREE.Scene();
 
@@ -34,10 +41,8 @@ miniScene.add(miniCamera);
 
 // Create a video element
 const video = document.createElement('video');
-video.src = '/fisheye/shot01_02.mp4'; // Replace with desired video's file path
 video.loop = true;
-video.muted = true;
-video.play().catch(err => console.warn('Video autoplay prevented', err));
+video.muted = true; // Important for autoplay policies
 
 // Create a video texture
 const texture = new THREE.VideoTexture(video);
@@ -48,22 +53,92 @@ texture.format = THREE.RGBFormat;
 // Create a sphere geometry for the dome
 const geometry = new THREE.SphereGeometry(100, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
 
-// Adjust UVs for fisheye mapping with a scale factor
-const scale = 1.0; // Adjust this value, e.g., 1.5, 2.0, etc., to stretch the 2D texture on 3D geometry
-const positions = geometry.attributes.position.array;
-const uvs = geometry.attributes.uv.array;
-const radius = 100;
-for (let i = 0; i < positions.length; i += 3) {
-  const x = positions[i];
-  const y = positions[i + 1];
-  const z = positions[i + 2];
-  const phi = Math.acos(y / radius);
-  const theta = Math.atan2(z, x);
-  const r = (phi / (Math.PI / 2)) * scale * 0.5; // means, r = (phi / (Math.PI / 2)) * 0.25, at phi=π/2, r=0.25
-  const u = 0.5 + r * Math.cos(theta);
-  const v = 0.5 + r * Math.sin(theta);
-  uvs[(i / 3) * 2] = u;
-  uvs[(i / 3) * 2 + 1] = v;
+// Function to update UV scaling
+function updateUVScaling(newScaleValue) {
+  currentScale = newScaleValue;
+  const positions = geometry.attributes.position.array;
+  const uvs = geometry.attributes.uv.array;
+  const radius = 100;
+
+  for (let i = 0; i < positions.length; i += 3) {
+    const x = positions[i];
+    const y = positions[i + 1];
+    const z = positions[i + 2];
+    const phi = Math.acos(y / radius);
+    const theta = Math.atan2(z, x);
+    const r = (phi / (Math.PI / 2)) * currentScale * 0.5;
+    const u = 0.5 + r * Math.cos(theta);
+    const v = 0.5 + r * Math.sin(theta);
+    uvs[(i / 3) * 2] = u;
+    uvs[(i / 3) * 2 + 1] = v;
+  }
+  geometry.attributes.uv.needsUpdate = true;
+  initialUvsSet = true;
+  console.log('UVs updated with scale:', currentScale);
+}
+
+// Function to update video source and scale from input fields
+function updateVideoAndScale() {
+  let scaleToApply = currentScale;
+
+  if (scaleInput) {
+    if (scaleInput.value.trim() !== "") {
+      const parsedScale = parseFloat(scaleInput.value);
+      if (!isNaN(parsedScale) && parsedScale > 0) {
+        scaleToApply = parsedScale;
+      } else {
+        console.warn(`Invalid scale value: "${scaleInput.value}". Using previous/default scale: ${currentScale}.`);
+        scaleInput.value = currentScale;
+        scaleToApply = currentScale;
+      }
+    } else {
+      console.warn(`Scale input is empty. Using previous/default scale: ${currentScale}.`);
+      scaleInput.value = currentScale;
+    }
+  } else {
+    console.warn("Scale input element not found. Using default scale:", currentScale);
+  }
+
+  if (currentScale !== scaleToApply || !initialUvsSet) {
+    updateUVScaling(scaleToApply);
+  }
+
+  if (videoUrlInput) {
+    const newVideoUrl = videoUrlInput.value.trim();
+    if (newVideoUrl) {
+      const absoluteNewVideoUrl = new URL(newVideoUrl, document.baseURI).href;
+      if (video.currentSrc !== absoluteNewVideoUrl) {
+        console.log('Attempting to update video source to:', newVideoUrl);
+        video.src = newVideoUrl;
+        video.load();
+        video.play().catch(err => console.warn('Video autoplay prevented for new source:', err));
+      }
+    } else if (video.src && video.currentSrc !== "") {
+      console.log("Video URL input cleared. Current video source remains:", video.src);
+    }
+  } else {
+    console.warn("Video URL input element not found.");
+  }
+}
+
+// Add event listener for the update button
+if (updateSettingsButton) {
+  updateSettingsButton.addEventListener('click', updateVideoAndScale);
+} else {
+  console.error("Update settings button not found.");
+}
+
+// Initial call to set video source, scale, and calculate UVs
+updateVideoAndScale();
+
+// If after the first attempt, the video source is still not set (e.g., input was empty)
+// default video will be played from placeholder
+if (!video.currentSrc && videoUrlInput && videoUrlInput.placeholder && videoUrlInput.placeholder.trim() !== "") {
+  console.log('No video URL provided, attempting to load from placeholder:', videoUrlInput.placeholder);
+  videoUrlInput.value = videoUrlInput.placeholder;
+  updateVideoAndScale();
+} else if (!video.currentSrc) {
+  console.log('No video URL provided and no placeholder found.');
 }
 
 // Create miniDome for the minimap, add to miniScene
