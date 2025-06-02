@@ -19,12 +19,12 @@ const controlsContainer = document.getElementById('controls');
 // Create minimap overlay (bottom-right) for inside view
 const miniRenderer = new THREE.WebGLRenderer({ alpha: true });
 miniRenderer.setSize(150, 150);
-miniRenderer.setClearColor(0x000000, 0);
+miniRenderer.setClearColor(0x000000, 1); // Set alpha to 1 for opaque black background
 miniRenderer.domElement.style.position = 'absolute';
 miniRenderer.domElement.style.bottom = '10px';
 miniRenderer.domElement.style.right = '10px';
 miniRenderer.domElement.style.zIndex = '10';
-miniRenderer.domElement.style.border = '2px solid red';
+miniRenderer.domElement.style.border = '2px solid darkgrey';
 miniRenderer.domElement.style.backgroundColor = 'rgba(255,255,255,0.1)';
 document.body.appendChild(miniRenderer.domElement);
 
@@ -66,11 +66,12 @@ for (let i = 0; i < positions.length; i += 3) {
   uvs[(i / 3) * 2 + 1] = v;
 }
 
-// Add textured dome for outside view in minimap
-const miniDome = new THREE.Mesh(
-  geometry,
-  new THREE.MeshBasicMaterial({ map: texture, side: THREE.FrontSide })
-);
+// Create miniDome for the minimap, add to miniScene
+const miniDomeMaterial = new THREE.MeshBasicMaterial({
+  map: texture,
+  side: THREE.BackSide, // For inside view
+});
+const miniDome = new THREE.Mesh(geometry, miniDomeMaterial); // Use the same geometry
 miniScene.add(miniDome);
 
 // Create a material with the video texture
@@ -105,11 +106,28 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
-  // render outside-view minimap when inside
+  // render minimap when main view is inside
   if (!isOutsideView) {
-    const dir = camera.getWorldDirection(new THREE.Vector3());
-    miniCamera.position.copy(dir.multiplyScalar(200));
-    miniCamera.lookAt(0, 0, 0);
+    miniDome.rotation.x = dome.rotation.x; // Sync miniDome rotation
+
+    // Get main camera's orientation for the minimap
+    const mainCamDir = new THREE.Vector3();
+    camera.getWorldDirection(mainCamDir); // Direction main camera is looking
+
+    const mainCamUp = new THREE.Vector3(0, 1, 0); // Standard Y up for camera space
+    mainCamUp.applyQuaternion(camera.quaternion); // Transform to main camera's current world up
+
+    // Position miniCamera outside the miniDome, looking at its center.
+    // The position is opposite to where the main camera is looking, creating an orbital view.
+    const miniCamDistance = 150; // Distance from center. miniDome radius is 100.
+    miniCamera.position.copy(mainCamDir).multiplyScalar(-miniCamDistance);
+
+    // Set miniCamera's up vector to match main camera's up before calling lookAt
+    miniCamera.up.copy(mainCamUp);
+
+    // Make miniCamera look at the center of the miniDome (which is at 0,0,0)
+    miniCamera.lookAt(miniDome.position);
+
     miniRenderer.domElement.style.display = '';
     miniRenderer.render(miniScene, miniCamera);
   } else {
