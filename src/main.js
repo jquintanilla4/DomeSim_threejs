@@ -168,7 +168,9 @@ controlsContainer.appendChild(viewToggleButton);
 viewToggleButton.addEventListener('click', () => {
   if (!isOutsideView) {
     // switch to outside
-    camera.position.set(0, 0, 200);
+    const distance = 200; // distance from center
+    const angleUp = 90 * Math.PI / 180; // 90 degrees in radians
+    camera.position.set(0, distance * Math.sin(angleUp), -distance * Math.cos(angleUp)); // 90 degrees up, 180 degree cw
     material.side = THREE.FrontSide;
     texture.wrapS = THREE.RepeatWrapping; // Add this for horizontal flip
     texture.repeat.x = -1;             // Add this to flip texture horizontally
