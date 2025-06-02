@@ -34,7 +34,7 @@ miniScene.add(miniCamera);
 
 // Create a video element
 const video = document.createElement('video');
-video.src = '/fisheye/shot03_04_v2_fish2.mp4'; // Replace with desired video's file path
+video.src = '/fisheye/shot01_02.mp4'; // Replace with desired video's file path
 video.loop = true;
 video.muted = true;
 video.play().catch(err => console.warn('Video autoplay prevented', err));
@@ -49,7 +49,7 @@ texture.format = THREE.RGBFormat;
 const geometry = new THREE.SphereGeometry(100, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
 
 // Adjust UVs for fisheye mapping with a scale factor
-const scale = 0.5; // Adjust this value, e.g., 1.5, 2.0, etc., to stretch the texture
+const scale = 1.0; // Adjust this value, e.g., 1.5, 2.0, etc., to stretch the 2D texture on 3D geometry
 const positions = geometry.attributes.position.array;
 const uvs = geometry.attributes.uv.array;
 const radius = 100;
@@ -59,7 +59,7 @@ for (let i = 0; i < positions.length; i += 3) {
   const z = positions[i + 2];
   const phi = Math.acos(y / radius);
   const theta = Math.atan2(z, x);
-  const r = (phi / (Math.PI / 2)) * scale * 0.5; // scale the radius to stretch the texture
+  const r = (phi / (Math.PI / 2)) * scale * 0.5; // means, r = (phi / (Math.PI / 2)) * 0.25, at phi=π/2, r=0.25
   const u = 0.5 + r * Math.cos(theta);
   const v = 0.5 + r * Math.sin(theta);
   uvs[(i / 3) * 2] = u;
@@ -170,6 +170,8 @@ viewToggleButton.addEventListener('click', () => {
     // switch to outside
     camera.position.set(0, 0, 200);
     material.side = THREE.FrontSide;
+    texture.wrapS = THREE.RepeatWrapping; // Add this for horizontal flip
+    texture.repeat.x = -1;             // Add this to flip texture horizontally
     viewToggleButton.textContent = 'Inside View';
     controls.target.set(0, 0, 0); // Target origin for outside view
     controls.minPolarAngle = 0;         // Nadir (consistent with user's 'perfect' outside view)
@@ -185,6 +187,8 @@ viewToggleButton.addEventListener('click', () => {
     // switch to inside
     camera.position.set(0, 0, 0);
     material.side = THREE.BackSide;
+    texture.wrapS = THREE.ClampToEdgeWrapping; // Reset to default
+    texture.repeat.x = 1;                      // Reset to normal
     viewToggleButton.textContent = 'Outside View';
     controls.target.set(0, 0, -1);      // Target along -Z to look "forward"
     controls.minPolarAngle = 0;           // Allow looking fully up
