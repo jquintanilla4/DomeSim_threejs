@@ -53,6 +53,16 @@ To start the development server and view the application in your browser:
 *   Use the **"Outside View" / "Inside View"** button to toggle the camera perspective.
 *   When in "Inside View", use the **rotation buttons** to look around the dome.
 
+## Example Videos
+
+This repository includes two example videos located in the `public/fisheye/` directory. To use them:
+
+1.  Ensure the application is running (`npm run dev`).
+2.  Enter one of the following paths into the "Video URL" input field:
+    *   `fisheye/shot01_02.mp4`
+    *   `fisheye/shot03_04_fishconv.mp4` (This video is pre-converted to a fisheye format. For optimal viewing, you might try a "UV Scale" of `0.5`, especially if it was converted using the parameters mentioned in the tips below.)
+3.  Click the "Apply Settings" button.
+
 ## Tips for UV Scaling
 
 *   If you have converted a 1:1 aspect ratio flat video to a fisheye format using ffmpeg with the following parameters:
