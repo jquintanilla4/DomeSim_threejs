@@ -34,7 +34,7 @@ miniScene.add(miniCamera);
 
 // Create a video element
 const video = document.createElement('video');
-video.src = '/fisheye/shot03_04_v2_fish5.mp4'; // Replace with desired video's file path
+video.src = '/fisheye/shot03_04_v2_fish2.mp4'; // Replace with desired video's file path
 video.loop = true;
 video.muted = true;
 video.play().catch(err => console.warn('Video autoplay prevented', err));
@@ -49,7 +49,7 @@ texture.format = THREE.RGBFormat;
 const geometry = new THREE.SphereGeometry(100, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
 
 // Adjust UVs for fisheye mapping with a scale factor
-const scale = 1.0; // Adjust this value, e.g., 1.5, 2.0, etc., to stretch the texture
+const scale = 0.5; // Adjust this value, e.g., 1.5, 2.0, etc., to stretch the texture
 const positions = geometry.attributes.position.array;
 const uvs = geometry.attributes.uv.array;
 const radius = 100;
@@ -87,14 +87,18 @@ scene.add(dome);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = false;
 controls.enablePan = false;
-controls.minPolarAngle = Math.PI / 2; // Horizontal
-controls.maxPolarAngle = Math.PI;     // Zenith (straight up)
 
-// Set initial target for OrbitControls for the inside view
-controls.target.set(0, 0, -1); // Look horizontally initially
+// Initial camera setup (defaults to inside view)
+controls.target.set(0, -1, 0);      // Target "down" to make camera look UP (Zenith)
+controls.minPolarAngle = Math.PI / 2; // Horizon
+controls.maxPolarAngle = Math.PI;     // Zenith
+controls.update(); // Ensure one update if not already present from other initializations
 
-// Track current view state early so animate() can read it
+// If starting in inside view, rotate dome to bring zenith to front
 let isOutsideView = false;
+if (!isOutsideView) {
+  dome.rotation.x = -Math.PI / 2; // Rotate dome -90 deg around X-axis
+}
 
 // Animation loop
 function animate() {
@@ -149,10 +153,11 @@ viewToggleButton.addEventListener('click', () => {
     camera.position.set(0, 0, 200);
     material.side = THREE.FrontSide;
     viewToggleButton.textContent = 'Inside View';
-    controls.minPolarAngle = 0;         // Allow full sphere for outside view
-    controls.maxPolarAngle = Math.PI;
-    isOutsideView = true;
     controls.target.set(0, 0, 0); // Target origin for outside view
+    controls.minPolarAngle = 0;         // Nadir (consistent with user's 'perfect' outside view)
+    controls.maxPolarAngle = Math.PI;   // Zenith (consistent with user's 'perfect' outside view)
+    dome.rotation.x = 0; // Reset dome rotation
+    isOutsideView = true;
     // Hide rotation buttons
     leftButton.style.display = 'none';
     rightButton.style.display = 'none';
@@ -163,10 +168,11 @@ viewToggleButton.addEventListener('click', () => {
     camera.position.set(0, 0, 0);
     material.side = THREE.BackSide;
     viewToggleButton.textContent = 'Outside View';
-    controls.minPolarAngle = Math.PI / 2; // Horizontal
+    controls.target.set(0, -1, 0);      // Target "down" to make camera look UP (Zenith)
+    controls.minPolarAngle = Math.PI / 2; // Horizon
     controls.maxPolarAngle = Math.PI;     // Zenith
+    dome.rotation.x = -Math.PI / 2; // Rotate dome -90 deg around X-axis
     isOutsideView = false;
-    controls.target.set(0, 0, -1); // Target in front for inside view
     // Show rotation buttons
     leftButton.style.display = '';
     rightButton.style.display = '';
