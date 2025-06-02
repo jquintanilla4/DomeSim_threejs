@@ -89,9 +89,9 @@ controls.enableZoom = false;
 controls.enablePan = false;
 
 // Initial camera setup (defaults to inside view)
-controls.target.set(0, -1, 0);      // Target "down" to make camera look UP (Zenith)
-controls.minPolarAngle = Math.PI / 2; // Horizon
-controls.maxPolarAngle = Math.PI;     // Zenith
+controls.target.set(0, 0, -1);      // Target along -Z to look "forward"
+controls.minPolarAngle = 0;           // Allow looking fully up (target.y can be positive)
+controls.maxPolarAngle = Math.PI;     // Allow looking fully down (target.y can be negative)
 controls.update(); // Ensure one update if not already present from other initializations
 
 // If starting in inside view, rotate dome to bring zenith to front
@@ -168,9 +168,9 @@ viewToggleButton.addEventListener('click', () => {
     camera.position.set(0, 0, 0);
     material.side = THREE.BackSide;
     viewToggleButton.textContent = 'Outside View';
-    controls.target.set(0, -1, 0);      // Target "down" to make camera look UP (Zenith)
-    controls.minPolarAngle = Math.PI / 2; // Horizon
-    controls.maxPolarAngle = Math.PI;     // Zenith
+    controls.target.set(0, 0, -1);      // Target along -Z to look "forward"
+    controls.minPolarAngle = 0;           // Allow looking fully up
+    controls.maxPolarAngle = Math.PI;     // Allow looking fully down
     dome.rotation.x = -Math.PI / 2; // Rotate dome -90 deg around X-axis
     isOutsideView = false;
     // Show rotation buttons
