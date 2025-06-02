@@ -34,7 +34,7 @@ miniScene.add(miniCamera);
 
 // Create a video element
 const video = document.createElement('video');
-video.src = '/fisheye/shot03_04_v2_fish.mp4'; // Replace with desired video's file path
+video.src = '/fisheye/shot03_04_v2_fish5.mp4'; // Replace with desired video's file path
 video.loop = true;
 video.muted = true;
 video.play().catch(err => console.warn('Video autoplay prevented', err));
@@ -48,7 +48,8 @@ texture.format = THREE.RGBFormat;
 // Create a sphere geometry for the dome
 const geometry = new THREE.SphereGeometry(100, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2);
 
-// Adjust UVs for fisheye mapping
+// Adjust UVs for fisheye mapping with a scale factor
+const scale = 1.0; // Adjust this value, e.g., 1.5, 2.0, etc., to stretch the texture
 const positions = geometry.attributes.position.array;
 const uvs = geometry.attributes.uv.array;
 const radius = 100;
@@ -58,7 +59,7 @@ for (let i = 0; i < positions.length; i += 3) {
   const z = positions[i + 2];
   const phi = Math.acos(y / radius);
   const theta = Math.atan2(z, x);
-  const r = (phi / (Math.PI / 2)) * 0.5;
+  const r = (phi / (Math.PI / 2)) * scale * 0.5; // scale the radius to stretch the texture
   const u = 0.5 + r * Math.cos(theta);
   const v = 0.5 + r * Math.sin(theta);
   uvs[(i / 3) * 2] = u;
